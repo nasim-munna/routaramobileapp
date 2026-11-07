@@ -4,6 +4,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.routara.field.data.ChatMessage
+import com.routara.field.data.ChatRow
+import com.routara.field.data.Contact
+import com.routara.field.data.DueRow
+import com.routara.field.data.ExpenseRow
+import com.routara.field.data.LeaveRow
+import com.routara.field.data.MyOrder
+import com.routara.field.data.OfferRow
+import com.routara.field.ui.screens.AccountScreen
+import com.routara.field.ui.screens.ChatThread
+import com.routara.field.ui.screens.ChatsList
+import com.routara.field.ui.screens.DuesList
+import com.routara.field.ui.screens.ExpenseForm
+import com.routara.field.ui.screens.ExpenseList
+import com.routara.field.ui.screens.LeaveForm
+import com.routara.field.ui.screens.LeaveList
+import com.routara.field.ui.screens.MyOrdersList
+import com.routara.field.ui.screens.OffersList
 import com.routara.field.data.DaySummary
 import com.routara.field.data.LocalOrder
 import com.routara.field.data.Me
@@ -109,6 +127,79 @@ class ScreenshotTest {
 
     @Test fun sync() = shot("16_sync") {
         SyncScreen(listOf(Pending("1", "ORDER", "{}", "Order for Corner Mart"), Pending("2", "VISIT", "{}", "Visit to City Bazar", error = "This day is already closed.")), false, null, {}, {})
+    }
+
+    @Test fun account() = shot("20_account") {
+        AccountScreen(Me(1, "Rafi", "Hossain", "rafi@routara.test", null, "EMPLOYEE", "Gulshan"), "Gulshan", true, false, 0, {}, {}, {}, {})
+    }
+
+    @Test fun myOrders() = shot("21_my_orders") {
+        MyOrdersList(
+            listOf(
+                MyOrder(1, "2026-11-07", "Lake View Store", "2448.00", "PARTIAL", "1824.00", "SI000012"),
+                MyOrder(2, "2026-11-07", "Corner Mart", "816.00", "WAITING", null, null),
+                MyOrder(3, "2026-11-06", "Green Grocery", "1320.00", "DELIVERED", "1320.00", "SI000011"),
+                MyOrder(4, "2026-11-05", "City Bazar", "460.00", "CANCELLED", null, null),
+            ),
+            null,
+            {},
+        )
+    }
+
+    @Test fun dues() = shot("22_dues") {
+        DuesList(listOf(DueRow(1, "Lake View Store", "2150.00"), DueRow(2, "Corner Mart", "640.50")), null, {})
+    }
+
+    @Test fun offers() = shot("23_offers") {
+        OffersList(listOf(OfferRow(1, "Buy 10 get 1 free", "Salted Crackers, by the case", "2026-11-01", "2026-11-30")), null, {})
+    }
+
+    @Test fun leave() = shot("24_leave") {
+        LeaveList(
+            listOf(
+                LeaveRow(1, "SICK", "2026-11-09", "2026-11-10", 2, "Fever", "PENDING", ""),
+                LeaveRow(2, "CASUAL", "2026-10-20", "2026-10-20", 1, "", "REJECTED", "Busy week, please pick another day"),
+            ),
+            null,
+            {},
+            {},
+            {},
+        )
+    }
+
+    @Test fun leaveForm() = shot("25_leave_form") { LeaveForm(false, null, {}) {} }
+
+    @Test fun expenses() = shot("26_expenses") {
+        ExpenseList(listOf(ExpenseRow(1, "2026-11-07", "TRANSPORT", "120.50", "Bus to Gulshan", "APPROVED", "")), null, {}, {}, {})
+    }
+
+    @Test fun expenseForm() = shot("27_expense_form") { ExpenseForm(false, null, {}) {} }
+
+    @Test fun chats() = shot("28_chats") {
+        ChatsList(
+            listOf(ChatRow("1-2", null, ChatMessage(9, 2, "Tania", "Please visit Corner Mart today", "2026-11-07T05:12:00Z"), Contact(2, "Tania", "Akter", "t@routara.test"))),
+            listOf(Contact(3, "Demo", "Admin", "a@routara.test")),
+            null,
+            {},
+            {},
+            {},
+        )
+    }
+
+    @Test fun chat() = shot("29_chat") {
+        ChatThread(
+            "Tania Akter",
+            1,
+            listOf(
+                ChatMessage(3, 1, "Rafi", "On my way now", "2026-11-07T05:14:00Z"),
+                ChatMessage(2, 2, "Tania", "Please visit Corner Mart today", "2026-11-07T05:12:00Z"),
+                ChatMessage(1, 1, "Rafi", "Good morning", "2026-11-07T05:02:00Z"),
+            ),
+            null,
+            false,
+            {},
+            {},
+        )
     }
 
     @Test fun newOutlet() = shot("17_new_outlet") { NewOutletScreen(listOf(Named(1, "Grocery"), Named(2, "Pharmacy")), 23.79 to 90.41, false, false, {}, {}) {} }

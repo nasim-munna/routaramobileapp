@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -8,8 +9,14 @@ plugins {
     id("io.github.takahirom.roborazzi")
 }
 
-val releaseApiUrl = providers.gradleProperty("routara.apiUrl").get()
-val releaseWsUrl = providers.gradleProperty("routara.wsUrl").get()
+// The real server address and signing key live in release.properties, which
+// git ignores. See release.properties.example.
+val release = Properties().apply {
+    val file = rootProject.file("release.properties")
+    if (file.exists()) file.inputStream().use(::load)
+}
+val releaseApiUrl = release.getProperty("apiUrl") ?: providers.gradleProperty("routara.apiUrl").get()
+val releaseWsUrl = release.getProperty("wsUrl") ?: providers.gradleProperty("routara.wsUrl").get()
 
 android {
     namespace = "com.routara.field"
@@ -21,6 +28,17 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
+    }
+
+    signingConfigs {
+        if (release.getProperty("storeFile") != null) {
+            create("release") {
+                storeFile = rootProject.file(release.getProperty("storeFile"))
+                storePassword = release.getProperty("storePassword")
+                keyAlias = release.getProperty("keyAlias")
+                keyPassword = release.getProperty("keyPassword")
+            }
+        }
     }
 
     buildFeatures {
@@ -38,6 +56,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            signingConfig = signingConfigs.findByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "API_URL", "\"$releaseApiUrl\"")
             buildConfigField("String", "WS_URL", "\"$releaseWsUrl\"")

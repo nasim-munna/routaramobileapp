@@ -37,7 +37,13 @@ import androidx.compose.material.icons.rounded.CloudDone
 import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Directions
 import androidx.compose.material.icons.rounded.EditLocationAlt
+import androidx.compose.material.icons.rounded.EventBusy
 import androidx.compose.material.icons.rounded.Flag
+import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.LocalOffer
+import androidx.compose.material.icons.rounded.LocalShipping
+import androidx.compose.material.icons.rounded.Payments
+import androidx.compose.material.icons.rounded.Receipt
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.NearMe
 import androidx.compose.material.icons.rounded.Person
@@ -463,7 +469,7 @@ fun OrdersScreen(orders: List<LocalOrder>, pendingIds: Set<String>) {
 }
 
 @Composable
-fun AccountScreen(me: Me?, territory: String?, checkedIn: Boolean, dayClosed: Boolean, pending: Int, onCheckOut: () -> Unit, onSync: () -> Unit, onDayEnd: () -> Unit, onSignOut: () -> Unit) {
+fun AccountScreen(me: Me?, territory: String?, checkedIn: Boolean, dayClosed: Boolean, pending: Int, onCheckOut: () -> Unit, onSync: () -> Unit, onDayEnd: () -> Unit, onSignOut: () -> Unit, onOpen: (String) -> Unit = {}) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).verticalScroll(rememberScrollState()).navigationBarsPadding()) {
         RouteBackdrop(Modifier.fillMaxWidth().clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))) {
             Row(Modifier.statusBarsPadding().padding(22.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -478,6 +484,12 @@ fun AccountScreen(me: Me?, territory: String?, checkedIn: Boolean, dayClosed: Bo
             }
         }
         Column(Modifier.padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 112.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            MenuRow("My orders", "See what was delivered", Icons.Rounded.LocalShipping, Teal, { onOpen("my-orders") })
+            MenuRow("Outlet dues", "What your outlets still owe", Icons.Rounded.Payments, Danger, { onOpen("dues") })
+            MenuRow("Messages", "Talk to your manager", Icons.Rounded.Forum, Teal, { onOpen("messages") })
+            MenuRow("Offers", "What's running now", Icons.Rounded.LocalOffer, MarigoldDeep, { onOpen("offers") })
+            MenuRow("Leave", "Ask for time off", Icons.Rounded.EventBusy, Success, { onOpen("leave") })
+            MenuRow("Expenses", "Claim what you spent", Icons.Rounded.Receipt, MarigoldDeep, { onOpen("expenses") })
             MenuRow("Sync", if (pending == 0) "Everything is up to date" else "Send your saved work", Icons.Rounded.CloudUpload, Teal, onSync, trailing = if (pending == 0) null else "$pending")
             if (checkedIn) MenuRow("Check out", "Stop sharing your location", Icons.Rounded.Today, MarigoldDeep, onCheckOut)
             if (!dayClosed) MenuRow("Day end", "Close today's field work", Icons.Rounded.Flag, Success, onDayEnd)

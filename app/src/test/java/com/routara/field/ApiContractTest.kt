@@ -2,7 +2,10 @@ package com.routara.field
 
 import com.google.gson.Gson
 import com.routara.field.data.CheckInOut
+import com.routara.field.data.ExpenseBody
+import com.routara.field.data.LeaveBody
 import com.routara.field.data.LoginRequest
+import com.routara.field.data.MessageBody
 import com.routara.field.data.NewOutletPayload
 import com.routara.field.data.OrderLinePayload
 import com.routara.field.data.OrderPayload
@@ -113,6 +116,34 @@ class ApiContractTest {
 
         assertEquals(true, api.dayEnd().success)
         assertTrue(api.summary().data!!.today.dayClosed)
+    }
+
+    @Test
+    fun teamScreensReadTheRealApi() = runBlocking {
+        assumeTrue("No test backend configured", url != null)
+        token = api.login(LoginRequest(System.getenv("ROUTARA_TEST_EMAIL"), System.getenv("ROUTARA_TEST_PASSWORD"))).data!!.accessToken
+
+        api.myOrders().data!!.forEach { assertTrue(it.deliveryStatus.isNotBlank()) }
+        api.dues().data!!.forEach { assertTrue(it.due.toDouble() > 0) }
+        api.offers().data!!
+
+        val start = java.time.LocalDate.now().plusDays(200 + (0..3000).random().toLong()).toString()
+        val leave = api.addLeave(LeaveBody("CASUAL", start, start, "Contract test")).data!!
+        assertEquals(1, leave.days)
+        assertTrue(api.leave().data!!.results.any { it.id == leave.id })
+        assertEquals("CANCELLED", api.cancelLeave(leave.id).data!!.status)
+
+        val expense = api.addExpense(ExpenseBody(java.time.LocalDate.now().minusDays(1).toString(), "TRANSPORT", "55.50", "Bus")).data!!
+        assertEquals("PENDING", expense.status)
+        assertTrue(api.expenses().data!!.results.any { it.id == expense.id })
+        assertEquals("CANCELLED", api.cancelExpense(expense.id).data!!.status)
+
+        val person = api.contacts().data!!.results.first()
+        val chat = api.startChat(person.id).data!!
+        val sent = api.send(chat.id, MessageBody("Contract test")).data!!
+        assertEquals(sent.id, api.messages(chat.id).data!!.results.first().id)
+        assertEquals(true, api.seen(chat.id).success)
+        assertEquals("Contract test", api.chats().data!!.results.first { it.id == chat.id }.lastMessage?.message)
     }
 
     private companion object {

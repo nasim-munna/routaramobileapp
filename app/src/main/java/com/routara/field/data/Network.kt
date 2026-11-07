@@ -65,6 +65,51 @@ interface RoutaraApi {
 
     @GET("field/reports/timeline")
     suspend fun timeline(): Envelope<List<TimelineRow>>
+
+    @GET("field/orders")
+    suspend fun myOrders(): Envelope<List<MyOrder>>
+
+    @GET("field/dues")
+    suspend fun dues(): Envelope<List<DueRow>>
+
+    @GET("offers?size=100")
+    suspend fun offers(): Envelope<Page<OfferRow>>
+
+    @GET("leave-requests?size=100")
+    suspend fun leave(): Envelope<Page<LeaveRow>>
+
+    @POST("leave-requests")
+    suspend fun addLeave(@Body body: LeaveBody): Envelope<LeaveRow>
+
+    @POST("leave-requests/{id}/cancel")
+    suspend fun cancelLeave(@Path("id") id: Long): Envelope<LeaveRow>
+
+    @GET("expenses?size=100")
+    suspend fun expenses(): Envelope<Page<ExpenseRow>>
+
+    @POST("expenses")
+    suspend fun addExpense(@Body body: ExpenseBody): Envelope<ExpenseRow>
+
+    @POST("expenses/{id}/cancel")
+    suspend fun cancelExpense(@Path("id") id: Long): Envelope<ExpenseRow>
+
+    @GET("conversation?size=100")
+    suspend fun chats(): Envelope<Page<ChatRow>>
+
+    @GET("user/others?size=100")
+    suspend fun contacts(): Envelope<Page<Contact>>
+
+    @POST("conversation/start/{id}")
+    suspend fun startChat(@Path("id") id: Long): Envelope<ChatRow>
+
+    @GET("conversation/{id}/messages?latest=true&size=100")
+    suspend fun messages(@Path("id") id: String): Envelope<Page<ChatMessage>>
+
+    @POST("conversation/{id}/messages")
+    suspend fun send(@Path("id") id: String, @Body body: MessageBody): Envelope<ChatMessage>
+
+    @POST("conversation/{id}/seen")
+    suspend fun seen(@Path("id") id: String): Envelope<Any>
 }
 
 /** Tokens live in this app's private storage, cleared on sign-out. */

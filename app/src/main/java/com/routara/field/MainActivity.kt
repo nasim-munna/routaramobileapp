@@ -81,6 +81,13 @@ import com.routara.field.data.todayIso
 import com.routara.field.ui.screens.AccountScreen
 import com.routara.field.ui.screens.ArriveScreen
 import com.routara.field.ui.screens.ArriveState
+import com.routara.field.ui.screens.ChatRoute
+import com.routara.field.ui.screens.ChatsRoute
+import com.routara.field.ui.screens.DuesRoute
+import com.routara.field.ui.screens.ExpenseRoute
+import com.routara.field.ui.screens.LeaveRoute
+import com.routara.field.ui.screens.MyOrdersRoute
+import com.routara.field.ui.screens.OffersRoute
 import com.routara.field.ui.screens.CatalogScreen
 import com.routara.field.ui.screens.EditOutletScreen
 import com.routara.field.ui.screens.HomeScreen
@@ -400,6 +407,18 @@ private fun Signedin(model: AppViewModel) {
                 EditOutletRoute(model, nav, entry.arguments?.getLong("id") ?: 0)
             }
             composable("pick-sale") { PickSaleRoute(model, nav) }
+            composable("my-orders") { MyOrdersRoute(model.repository) { nav.popBackStack() } }
+            composable("dues") { DuesRoute(model.repository) { nav.popBackStack() } }
+            composable("offers") { OffersRoute(model.repository) { nav.popBackStack() } }
+            composable("leave") { LeaveRoute(model.repository) { nav.popBackStack() } }
+            composable("expenses") { ExpenseRoute(model.repository) { nav.popBackStack() } }
+            composable("messages") {
+                ChatsRoute(model.repository, { nav.popBackStack() }) { id, name -> nav.navigate("chat/$id/${Uri.encode(name)}") }
+            }
+            composable("chat/{id}/{name}") { entry ->
+                val me by model.me.collectAsStateWithLifecycle()
+                ChatRoute(model.repository, entry.arguments?.getString("id").orEmpty(), entry.arguments?.getString("name").orEmpty(), me?.id ?: 0) { nav.popBackStack() }
+            }
         }
         notice?.let { text ->
             LaunchedEffect(text) {
@@ -481,6 +500,7 @@ private fun MainTabs(model: AppViewModel, nav: NavHostController) {
                 onSync = { nav.navigate("sync") },
                 onDayEnd = { confirmDayEnd = true },
                 onSignOut = model::signOut,
+                onOpen = { nav.navigate(it) },
             )
         }
         FloatingTabs(tab, { tab = it }, Modifier.align(Alignment.BottomCenter))

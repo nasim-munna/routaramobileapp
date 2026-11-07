@@ -170,6 +170,27 @@ data class KpiDay(val date: String, val calls: Int, val productive: Int, val mem
 data class Kpi(val calls: Int, val productive: Int, val productivePercent: Double, val memos: Int, val value: String, val valuePerMemo: String, val days: List<KpiDay>)
 data class TimelineRow(val time: String, val outlet: String, val outcome: String, val reason: String?, val withinRange: Boolean?, val distanceM: Double?, val value: String?)
 
+data class Page<T>(val count: Int, val results: List<T>)
+
+data class MyOrder(val id: Long, val date: String, val outlet: String, val total: String, val deliveryStatus: String, val deliveredTotal: String?, val invoice: String?)
+data class DueRow(val outletId: Long, val name: String, val due: String)
+data class OfferRow(val id: Long, val title: String, val details: String, val startDate: String, val endDate: String)
+
+data class LeaveRow(val id: Long, val kind: String, val startDate: String, val endDate: String, val days: Int, val reason: String, val status: String, val rejectionReason: String)
+data class LeaveBody(val kind: String, val startDate: String, val endDate: String, val reason: String)
+
+data class ExpenseRow(val id: Long, val date: String, val category: String, val amount: String, val note: String, val status: String, val rejectionReason: String)
+data class ExpenseBody(val date: String, val category: String, val amount: String, val note: String)
+
+data class Contact(val id: Long, val firstName: String?, val lastName: String?, val email: String) {
+    val fullName get() = listOfNotNull(firstName, lastName).joinToString(" ").ifBlank { email }
+}
+data class ChatMessage(val id: Long, val sender: Long, val senderName: String?, val message: String?, val createdAt: String)
+data class ChatRow(val id: String, val name: String?, val lastMessage: ChatMessage?, val otherParticipant: Contact?) {
+    val title get() = otherParticipant?.fullName ?: name ?: "Conversation"
+}
+data class MessageBody(val message: String)
+
 /** What the outlet pays. The server works this out again and has the final say. */
 fun afterDiscount(gross: Double, percent: Double) = gross - gross * percent / 100
 

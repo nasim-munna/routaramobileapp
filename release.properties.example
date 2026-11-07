@@ -1,0 +1,7 @@
+# Copy to release.properties (ignored by git) and fill in.
+apiUrl=https://api.example.com/api/v1/
+wsUrl=wss://api.example.com/ws/tracking/
+storeFile=routara-release.jks
+storePassword=
+keyAlias=routara
+keyPassword=
