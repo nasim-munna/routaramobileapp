@@ -66,6 +66,7 @@ import com.routara.field.data.OutletRow
 import com.routara.field.data.OutletUpdatePayload
 import com.routara.field.data.Product
 import com.routara.field.data.Repository
+import com.routara.field.data.afterDiscount
 import com.routara.field.data.RepositoryHolder
 import com.routara.field.data.SkuRow
 import com.routara.field.data.TimelineRow
@@ -239,10 +240,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         return products.filter { (draft.cart[it.id] ?: 0) > 0 }.associateWith { draft.cart.getValue(it.id) }
     }
 
-    fun submitVisit(reasonId: Long?, note: String, done: () -> Unit) = viewModelScope.launch {
+    fun submitVisit(reasonId: Long?, note: String, discountPercent: Double = 0.0, done: () -> Unit) = viewModelScope.launch {
         val draft = _visit.value ?: return@launch
         _visit.update { it?.copy(saving = true) }
-        repository.saveVisit(draft.outlet, draft.kind, draft.location, cartProducts(), reasonId, note, draft.photo)
+        repository.saveVisit(draft.outlet, draft.kind, draft.location, cartProducts(), reasonId, note, draft.photo, discountPercent)
         _visit.update { it?.copy(saving = false) }
         done()
     }
@@ -523,6 +524,7 @@ private fun ArriveRoute(model: AppViewModel, nav: NavHostController) {
 private fun PhotoRoute(model: AppViewModel, nav: NavHostController) {
     val context = LocalContext.current
     val draft by model.visit.collectAsStateWithLifecycle()
+    val bootstrap by model.repository.bootstrap.collectAsStateWithLifecycle()
     val visit = draft ?: return
     var target by remember { mutableStateOf<File?>(null) }
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
@@ -531,6 +533,7 @@ private fun PhotoRoute(model: AppViewModel, nav: NavHostController) {
     PhotoScreen(
         outlet = visit.outlet,
         photo = visit.photo,
+        required = bootstrap?.photoRequired == true,
         onBack = { nav.popBackStack() },
         onTake = {
             val file = model.newPhotoFile()
@@ -565,11 +568,12 @@ private fun finish(nav: NavHostController, total: Double?) = nav.navigate("done/
 @Composable
 private fun ReviewRoute(model: AppViewModel, nav: NavHostController) {
     val draft by model.visit.collectAsStateWithLifecycle()
+    val bootstrap by model.repository.bootstrap.collectAsStateWithLifecycle()
     val visit = draft ?: return
     val cart = model.cartProducts()
-    ReviewScreen(visit.outlet, cart, visit.saving, { nav.popBackStack() }) {
-        val total = cart.entries.sumOf { (product, quantity) -> product.trade * quantity }
-        model.submitVisit(null, "") { finish(nav, total) }
+    ReviewScreen(visit.outlet, cart, visit.saving, bootstrap?.maxDiscountPercent ?: 0.0, { nav.popBackStack() }) { percent ->
+        val gross = cart.entries.sumOf { (product, quantity) -> product.trade * quantity }
+        model.submitVisit(null, "", percent) { finish(nav, afterDiscount(gross, percent)) }
     }
 }
 

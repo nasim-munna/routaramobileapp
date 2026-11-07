@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -58,14 +59,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.routara.field.data.Named
+import com.routara.field.data.afterDiscount
 import com.routara.field.data.Outlet
 import com.routara.field.data.Product
 import com.routara.field.ui.components.EmptyNote
+import com.routara.field.ui.components.Field
 import com.routara.field.ui.components.GhostButton
 import com.routara.field.ui.components.GoldButton
 import com.routara.field.ui.components.IconBadge
@@ -190,9 +194,9 @@ fun ArriveScreen(state: ArriveState, onBack: () -> Unit, onRetry: () -> Unit, on
 }
 
 @Composable
-fun PhotoScreen(outlet: Outlet, photo: String?, onBack: () -> Unit, onTake: () -> Unit, onContinue: () -> Unit) {
+fun PhotoScreen(outlet: Outlet, photo: String?, required: Boolean, onBack: () -> Unit, onTake: () -> Unit, onContinue: () -> Unit) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).navigationBarsPadding()) {
-        ScreenBar(outlet.name, "Shop front photo", onBack)
+        ScreenBar(outlet.name, if (required) "Shop front photo" else "Shop front photo (optional)", onBack)
         StepRoute(1)
         Column(Modifier.weight(1f).padding(horizontal = 22.dp)) {
             SoftCard(Modifier.fillMaxWidth().aspectRatio(0.95f), onClick = onTake) {
@@ -210,6 +214,7 @@ fun PhotoScreen(outlet: Outlet, photo: String?, onBack: () -> Unit, onTake: () -
         }
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (photo != null) GhostButton("Retake photo", Modifier.fillMaxWidth(), Icons.Rounded.CameraAlt, onTake)
+            if (photo == null && !required) GhostButton("Skip photo", Modifier.fillMaxWidth(), onClick = onContinue)
             GoldButton(if (photo != null) "Continue" else "Take photo", Modifier.fillMaxWidth(), icon = if (photo != null) Icons.AutoMirrored.Rounded.ArrowForward else Icons.Rounded.CameraAlt, onClick = if (photo != null) onContinue else onTake)
         }
     }
@@ -306,7 +311,7 @@ fun OrderScreen(
     val total = products.sumOf { it.trade * (cart[it.id] ?: 0) }
     val lines = cart.values.count { it > 0 }
 
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).imePadding()) {
         ScreenBar(outlet.name, if (readySale) "Ready sale" else "New order", onBack)
         StepRoute(2)
         OutlinedTextField(
@@ -343,9 +348,20 @@ fun OrderScreen(
 }
 
 @Composable
-fun ReviewScreen(outlet: Outlet, cart: Map<Product, Int>, saving: Boolean, onBack: () -> Unit, onSubmit: () -> Unit) {
-    val total = cart.entries.sumOf { (product, quantity) -> product.trade * quantity }
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).navigationBarsPadding()) {
+fun ReviewScreen(
+    outlet: Outlet,
+    cart: Map<Product, Int>,
+    saving: Boolean,
+    maxDiscount: Double,
+    onBack: () -> Unit,
+    onSubmit: (discountPercent: Double) -> Unit,
+) {
+    var entered by remember { mutableStateOf("") }
+    val percent = entered.toDoubleOrNull() ?: 0.0
+    val invalid = (entered.isNotBlank() && entered.toDoubleOrNull() == null) || percent < 0 || percent > maxDiscount
+    val gross = cart.entries.sumOf { (product, quantity) -> product.trade * quantity }
+    val total = afterDiscount(gross, percent)
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).navigationBarsPadding().imePadding()) {
         ScreenBar(outlet.name, "Check before you submit", onBack)
         StepRoute(3)
         LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -363,23 +379,48 @@ fun ReviewScreen(outlet: Outlet, cart: Map<Product, Int>, saving: Boolean, onBac
         }
         SoftCard(Modifier.padding(18.dp).fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
+                if (maxDiscount > 0) {
+                    Field(
+                        "Discount % (optional)",
+                        entered,
+                        { entered = it.take(6) },
+                        hint = if (invalid) "Enter 0 to ${percentLabel(maxDiscount)}%" else "Up to ${percentLabel(maxDiscount)}%",
+                        keyboard = KeyboardType.Decimal,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    if (percent > 0 && !invalid) {
+                        AmountRow("Subtotal", taka(gross, exact = true))
+                        AmountRow("Discount (${percentLabel(percent)}%)", "− " + taka(gross - total, exact = true))
+                        Spacer(Modifier.height(6.dp))
+                    }
+                }
                 Row {
                     Text("Order total", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                     Text(taka(total, exact = true), style = MaterialTheme.typography.titleLarge)
                 }
                 Spacer(Modifier.height(12.dp))
-                GoldButton("Submit order", Modifier.fillMaxWidth(), busy = saving, icon = Icons.Rounded.Check, onClick = onSubmit)
+                GoldButton("Submit order", Modifier.fillMaxWidth(), enabled = !invalid, busy = saving, icon = Icons.Rounded.Check) { onSubmit(percent) }
             }
         }
     }
 }
 
 @Composable
+private fun AmountRow(label: String, value: String) {
+    Row(Modifier.padding(vertical = 2.dp)) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+        Text(value, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+private fun percentLabel(value: Double) = if (value % 1.0 == 0.0) value.toInt().toString() else value.toString()
+
+@Composable
 fun NoOrderScreen(outlet: Outlet, reasons: List<Named>, saving: Boolean, onBack: () -> Unit, onSubmit: (Long, String) -> Unit) {
     var reason by remember { mutableStateOf<Long?>(null) }
     var note by remember { mutableStateOf("") }
 
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).navigationBarsPadding()) {
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).navigationBarsPadding().imePadding()) {
         ScreenBar(outlet.name, "No order today", onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Why no order?", style = MaterialTheme.typography.headlineMedium)

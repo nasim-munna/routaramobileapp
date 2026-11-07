@@ -86,11 +86,11 @@ class ScreenshotTest {
 
     @Test fun arrivedFar() = shot("07_arrive_far") { ArriveScreen(ArriveState(shop, 12931.0, 100, false, true), {}, {}, {}, {}) }
 
-    @Test fun photo() = shot("08_photo") { PhotoScreen(shop, null, {}, {}, {}) }
+    @Test fun photo() = shot("08_photo") { PhotoScreen(shop, null, false, {}, {}, {}) }
 
     @Test fun order() = shot("09_order") { OrderScreen(shop, products, mapOf(1L to 24, 3L to 12), false, {}, { _, _ -> }, {}, {}) }
 
-    @Test fun review() = shot("10_review") { ReviewScreen(shop, mapOf(products[0] to 24, products[2] to 12), false, {}, {}) }
+    @Test fun review() = shot("10_review") { ReviewScreen(shop, mapOf(products[0] to 24, products[2] to 12), false, 10.0, {}, {}) }
 
     @Test fun noOrder() = shot("11_no_order") { NoOrderScreen(shop, listOf(Named(1, "Shop closed"), Named(2, "Owner not available"), Named(3, "Enough stock")), false, {}) { _, _ -> } }
 

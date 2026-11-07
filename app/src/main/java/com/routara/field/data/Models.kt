@@ -70,6 +70,8 @@ data class Bootstrap(
     val reasons: List<Named>,
     val channels: List<Named>,
     val visitedOutletIds: List<Long>,
+    val photoRequired: Boolean = false,
+    val maxDiscountPercent: Double = 0.0,
 )
 
 data class DaySummary(
@@ -114,6 +116,7 @@ data class OrderPayload(
     val capturedAt: String,
     val kind: String,
     val lines: List<OrderLinePayload>,
+    val discountPercent: Double = 0.0,
 )
 
 data class NewOutletPayload(
@@ -166,6 +169,9 @@ data class OutletRow(val outletId: Long, val name: String, val code: String?, va
 data class KpiDay(val date: String, val calls: Int, val productive: Int, val memos: Int, val value: String)
 data class Kpi(val calls: Int, val productive: Int, val productivePercent: Double, val memos: Int, val value: String, val valuePerMemo: String, val days: List<KpiDay>)
 data class TimelineRow(val time: String, val outlet: String, val outcome: String, val reason: String?, val withinRange: Boolean?, val distanceM: Double?, val value: String?)
+
+/** What the outlet pays. The server works this out again and has the final say. */
+fun afterDiscount(gross: Double, percent: Double) = gross - gross * percent / 100
 
 /** Straight-line distance in metres. */
 fun distanceMeters(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {

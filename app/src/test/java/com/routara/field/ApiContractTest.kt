@@ -8,6 +8,7 @@ import com.routara.field.data.OrderLinePayload
 import com.routara.field.data.OrderPayload
 import com.routara.field.data.SyncBatch
 import com.routara.field.data.VisitPayload
+import com.routara.field.data.afterDiscount
 import com.routara.field.data.friendly
 import com.routara.field.data.retrofit
 import kotlinx.coroutines.runBlocking
@@ -63,6 +64,7 @@ class ApiContractTest {
         assertTrue(day.reasons.isNotEmpty())
         assertTrue(day.channels.isNotEmpty())
         assertTrue(day.visitRadiusM > 0)
+        assertEquals(15.0, day.maxDiscountPercent, 0.0)
         val beat = day.beats.first { it.id == day.todayBeat }
         val outlet = day.outlets.first { it.id == beat.outletIds.first() }
         val closed = day.outlets.first { it.id == beat.outletIds.last() }
@@ -82,7 +84,7 @@ class ApiContractTest {
         val now = Instant.now().toString()
         val visit = VisitPayload(UUID.randomUUID().toString(), outlet.id, now, outlet.latitude, outlet.longitude, "PRODUCTIVE", beat.id)
         val noOrder = VisitPayload(UUID.randomUUID().toString(), closed.id, now, closed.latitude, closed.longitude, "NON_PRODUCTIVE", beat.id, day.reasons.first().id, "Closed for lunch")
-        val order = OrderPayload(UUID.randomUUID().toString(), visit.clientId, outlet.id, now, "REGULAR", listOf(OrderLinePayload(product.id, 3)))
+        val order = OrderPayload(UUID.randomUUID().toString(), visit.clientId, outlet.id, now, "REGULAR", listOf(OrderLinePayload(product.id, 3)), discountPercent = 10.0)
         val shop = NewOutletPayload(UUID.randomUUID().toString(), "Contract Test Shop", "পরীক্ষা দোকান", "Owner", "017", "Road 1", "রোড ১", day.channels.first().id, 23.8, 90.4)
         val batch = SyncBatch(listOf(shop), emptyList(), listOf(visit, noOrder), listOf(order))
 
@@ -98,7 +100,7 @@ class ApiContractTest {
 
         val summary = api.summary().data!!
         assertTrue(summary.today.memos >= 1)
-        assertTrue(summary.today.value.toDouble() >= product.trade * 3)
+        assertEquals(afterDiscount(product.trade * 3, 10.0), summary.today.value.toDouble(), 0.01)
         assertEquals(beat.name, summary.today.beat)
         assertFalse(summary.today.dayClosed)
 

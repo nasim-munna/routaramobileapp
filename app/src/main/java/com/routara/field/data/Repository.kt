@@ -177,6 +177,7 @@ class Repository(private val context: Context) {
         reasonId: Long?,
         note: String,
         photoPath: String?,
+        discountPercent: Double,
     ) {
         val now = Instant.now().toString()
         val visitId = UUID.randomUUID().toString()
@@ -205,6 +206,7 @@ class Repository(private val context: Context) {
                 capturedAt = now,
                 kind = kind,
                 lines = cart.map { (product, quantity) -> OrderLinePayload(product.id, quantity) },
+                discountPercent = discountPercent,
             )
             dao.addOrder(
                 LocalOrder(
@@ -213,7 +215,7 @@ class Repository(private val context: Context) {
                     outletName = outlet.name,
                     kind = kind,
                     lines = cart.size,
-                    total = cart.entries.sumOf { (product, quantity) -> product.trade * quantity },
+                    total = afterDiscount(cart.entries.sumOf { (product, quantity) -> product.trade * quantity }, discountPercent),
                     capturedAt = now,
                 ),
             )
